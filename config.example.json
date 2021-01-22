@@ -1,0 +1,9 @@
+{
+  "miner": "string",
+  "currency": "USD",
+  "telegram": {
+    "chat_id": 123,
+    "auth_key": "string"
+  },
+  "state_file": "state.json"
+}

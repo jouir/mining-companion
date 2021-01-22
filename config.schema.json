@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "telegram": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "number"
+        },
+        "auth_key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "chat_id",
+        "auth_key"
+      ]
+    },
+    "miner": {
+      "type": "string"
+    },
+    "state_file": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "miner"
+  ]
+}
