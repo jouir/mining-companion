@@ -34,7 +34,7 @@ See [configuration example](config.example.json).
 ## Usage
 
 ```
-python3 main --help
+python3 main.py --help
 ```
 
 
