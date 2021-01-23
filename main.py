@@ -91,7 +91,7 @@ def watch_miner(address, state_file, config, disable_notifications, exchange_rat
                                                       message_variables=variables)
             try:
                 telegram.send_message(auth_key=config['telegram']['auth_key'], payload=payload)
-                logger.info('block notification sent to telegram')
+                logger.info('balance notification sent to telegram')
             except HTTPError as err:
                 logger.error('failed to send notification to telegram')
                 logger.debug(str(err))
