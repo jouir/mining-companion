@@ -15,12 +15,17 @@ def markdown_escape(text):
     return text
 
 
-def generate_payload(chat_id, message_variables, template_file_name=None):
+def create_block_payload(chat_id, message_variables):
+    return generate_payload(chat_id, message_variables, 'block.md.j2')
+
+
+def create_balance_payload(chat_id, message_variables):
+    return generate_payload(chat_id, message_variables, 'balance.md.j2')
+
+
+def generate_payload(chat_id, message_variables, template_name):
     payload = {'chat_id': chat_id, 'parse_mode': 'MarkdownV2'}
-    if not template_file_name:
-        template_file_name = os.path.join(absolute_path, 'message.md.j2')
-    template_path = os.path.dirname(os.path.abspath(template_file_name))
-    template_name = os.path.basename(os.path.abspath(template_file_name))
+    template_path = os.path.join(absolute_path, 'templates')
     loader = FileSystemLoader(template_path)
     env = Environment(loader=loader)
     template = env.get_template(template_name)
