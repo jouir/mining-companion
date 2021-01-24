@@ -2,6 +2,11 @@ import json
 import os
 
 
+def read_state(filename):
+    with open(filename, 'r') as fd:
+        return json.load(fd)
+
+
 def write_state(filename, block_number=None, miner_balance=None):
     data = {}
     if os.path.isfile(filename):
@@ -17,6 +22,6 @@ def write_state(filename, block_number=None, miner_balance=None):
         json.dump(data, fd)
 
 
-def read_state(filename):
-    with open(filename, 'r') as fd:
-        return json.load(fd)
+def create_state(filename):
+    if not os.path.isfile(filename):
+        write_state(filename)

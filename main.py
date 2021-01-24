@@ -7,7 +7,7 @@ from coingecko import get_rate
 from config import read_config, validate_config
 from flexpool import BlockNotFoundException, LastBlock, Miner
 from requests.exceptions import HTTPError
-from state import read_state, write_state
+from state import create_state, read_state, write_state
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def setup_logging(args):
     logging.basicConfig(format=log_format, level=args.loglevel, filename=args.logfile)
 
 
-def watch_block(state_file, config, disable_notifications, exchange_rate=None, currency=None):
+def watch_block(config, disable_notifications, last_block=None, exchange_rate=None, currency=None):
     logger.debug('fetching last mined block')
     try:
         block = LastBlock(exchange_rate=exchange_rate, currency=currency)
@@ -43,10 +43,7 @@ def watch_block(state_file, config, disable_notifications, exchange_rate=None, c
         logger.warning('last block found')
         return
 
-    logger.debug('reading state file')
-    state = read_state(filename=state_file)
-
-    if block.number != state.get('block'):
+    if block.number != last_block:
         logger.info(f'block {block.number} mined')
         logger.debug(block)
 
@@ -62,11 +59,10 @@ def watch_block(state_file, config, disable_notifications, exchange_rate=None, c
                 logger.error('failed to send notification to telegram')
                 logger.debug(str(err))
 
-    logger.debug('writing block to state file')
-    write_state(filename=state_file, block_number=block.number)
+    return block
 
 
-def watch_miner(address, state_file, config, disable_notifications, exchange_rate=None, currency=None):
+def watch_miner(address, config, disable_notifications, last_balance=None, exchange_rate=None, currency=None):
     logger.debug(f'watching miner {address}')
     try:
         miner = Miner(address=address, exchange_rate=exchange_rate, currency=currency)
@@ -77,11 +73,8 @@ def watch_miner(address, state_file, config, disable_notifications, exchange_rat
 
     logger.debug(miner)
 
-    logger.debug('reading state file')
-    state = read_state(filename=state_file)
-
     # watch balance
-    if miner.raw_balance != state.get('balance'):
+    if miner.raw_balance != last_balance:
         logger.info(f'miner {address} balance has changed')
         if not disable_notifications and config.get('telegram'):
             logger.debug('sending balance notification to telegram')
@@ -96,8 +89,7 @@ def watch_miner(address, state_file, config, disable_notifications, exchange_rat
                 logger.error('failed to send notification to telegram')
                 logger.debug(str(err))
 
-    logger.debug('writing balance to state file')
-    write_state(filename=state_file, miner_balance=miner.raw_balance)
+    return miner
 
 
 def main():
@@ -106,7 +98,10 @@ def main():
 
     config = read_config(args.config)
     validate_config(config)
+
     state_file = config.get('state_file', DEFAULT_STATE_FILE)
+    create_state(state_file)
+    state = read_state(state_file)
 
     exchange_rate = None
     currency = config.get('currency', DEFAULT_CURRENCY)
@@ -118,8 +113,16 @@ def main():
         logger.warning(f'failed to get ETH/{currency} rate')
         logger.debug(str(err))
 
-    watch_block(state_file, config, args.disable_notifications, exchange_rate, currency)
-    watch_miner(config['miner'], state_file, config, args.disable_notifications, exchange_rate, currency)
+    block = watch_block(last_block=state.get('block'), config=config, disable_notifications=args.disable_notifications,
+                        exchange_rate=exchange_rate, currency=currency)
+    logger.debug('saving block number to state file')
+    write_state(state_file, block_number=block.number)
+
+    miner = watch_miner(last_balance=state.get('balance'), address=config['miner'], config=config,
+                        disable_notifications=args.disable_notifications, exchange_rate=exchange_rate,
+                        currency=currency)
+    logger.debug('saving miner balance to state file')
+    write_state(state_file, miner_balance=miner.raw_balance)
 
 
 if __name__ == '__main__':
