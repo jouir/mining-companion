@@ -7,7 +7,7 @@ colorama==0.4.3
 contextlib2==0.6.0
 distlib==0.3.0
 distro==1.4.0
-flexpoolapi==1.2.7.post1
+flexpoolapi==1.2.7.post2
 html5lib==1.0.1
 humanfriendly==9.1
 idna==2.8

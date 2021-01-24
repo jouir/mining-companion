@@ -61,18 +61,19 @@ def watch_block(config, disable_notifications, last_block=None, exchange_rate=No
     return block
 
 
-def watch_miner(address, config, disable_notifications, last_balance=None, exchange_rate=None, currency=None):
+def watch_miner(address, config, disable_notifications, last_balance=None, last_transaction=None, exchange_rate=None,
+                currency=None):
     logger.debug(f'watching miner {address}')
     try:
         miner = Miner(address=address, exchange_rate=exchange_rate, currency=currency)
     except Exception as err:
         logger.error('failed to find miner')
-        logger.debug(str(err))
+        logger.debug(err)
         return
 
     logger.debug(miner)
 
-    # watch balance
+    logger.debug('watching miner balance')
     if miner.raw_balance != last_balance:
         logger.info(f'miner {address} balance has changed')
         if not disable_notifications and config.get('telegram'):
@@ -84,6 +85,23 @@ def watch_miner(address, config, disable_notifications, last_balance=None, excha
             try:
                 telegram.send_message(auth_key=config['telegram']['auth_key'], payload=payload)
                 logger.info('balance notification sent to telegram')
+            except HTTPError as err:
+                logger.error('failed to send notification to telegram')
+                logger.debug(str(err))
+
+    logger.debug('watching miner payments')
+    if miner.last_transaction and miner.last_transaction.txid != last_transaction:
+        logger.info(f'new payment for miner {address}')
+        if not disable_notifications and config.get('telegram'):
+            logger.debug('sending payment notification to telegram')
+            variables = {'address': address, 'txid': miner.last_transaction.txid,
+                         'amount': miner.last_transaction.amount, 'amount_fiat': miner.last_transaction.amount_fiat,
+                         'time': miner.last_transaction.time, 'duration': miner.last_transaction.duration}
+            payload = telegram.create_payment_payload(chat_id=config['telegram']['chat_id'],
+                                                      message_variables=variables)
+            try:
+                telegram.send_message(auth_key=config['telegram']['auth_key'], payload=payload)
+                logger.info('payment notification sent to telegram')
             except HTTPError as err:
                 logger.error('failed to send notification to telegram')
                 logger.debug(str(err))
@@ -115,15 +133,20 @@ def main():
 
     block = watch_block(last_block=state.get('block'), config=config, disable_notifications=args.disable_notifications,
                         exchange_rate=exchange_rate, currency=currency)
-    logger.debug('saving block number to state file')
-    write_state(state_file, block_number=block.number)
+    if block:
+        logger.debug('saving block number to state file')
+        write_state(state_file, block_number=block.number)
 
     if config.get('miner'):
-        miner = watch_miner(last_balance=state.get('balance'), address=config['miner'], config=config,
-                            disable_notifications=args.disable_notifications, exchange_rate=exchange_rate,
-                            currency=currency)
-        logger.debug('saving miner balance to state file')
-        write_state(state_file, miner_balance=miner.raw_balance)
+        miner = watch_miner(last_balance=state.get('balance'), last_transaction=state.get('payment'),
+                            address=config['miner'], config=config, disable_notifications=args.disable_notifications,
+                            exchange_rate=exchange_rate, currency=currency)
+        if miner:
+            logger.debug('saving miner balance to state file')
+            write_state(state_file, miner_balance=miner.raw_balance)
+            if miner.last_transaction and miner.last_transaction.txid:
+                logger.debug('saving miner payment to state file')
+                write_state(state_file, miner_payment=miner.last_transaction.txid)
 
 
 if __name__ == '__main__':

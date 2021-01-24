@@ -23,8 +23,12 @@ def create_balance_payload(chat_id, message_variables):
     return generate_payload(chat_id, message_variables, 'balance.md.j2')
 
 
+def create_payment_payload(chat_id, message_variables):
+    return generate_payload(chat_id, message_variables, 'payment.md.j2')
+
+
 def generate_payload(chat_id, message_variables, template_name):
-    payload = {'chat_id': chat_id, 'parse_mode': 'MarkdownV2'}
+    payload = {'chat_id': chat_id, 'parse_mode': 'MarkdownV2', 'disable_web_page_preview': True}
     template_path = os.path.join(absolute_path, 'templates')
     loader = FileSystemLoader(template_path)
     env = Environment(loader=loader)

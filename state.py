@@ -7,7 +7,7 @@ def read_state(filename):
         return json.load(fd)
 
 
-def write_state(filename, block_number=None, miner_balance=None):
+def write_state(filename, block_number=None, miner_balance=None, miner_payment=None):
     data = {}
     if os.path.isfile(filename):
         data = read_state(filename)
@@ -17,6 +17,9 @@ def write_state(filename, block_number=None, miner_balance=None):
 
     if miner_balance:
         data['balance'] = miner_balance
+
+    if miner_payment:
+        data['payment'] = miner_payment
 
     with open(filename, 'w') as fd:
         json.dump(data, fd)

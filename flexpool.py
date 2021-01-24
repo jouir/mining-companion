@@ -57,6 +57,14 @@ class Miner:
         self.balance_fiat = self.convert_balance()
         self.balance_percentage = self.format_balance_percentage()
 
+        last_transactions = miner.payments_paged(page=0)
+        if last_transactions:
+            trx = last_transactions[0]
+            self.last_transaction = Transaction(amount=trx.amount, time=trx.time, duration=trx.duration, txid=trx.txid,
+                                                exchange_rate=exchange_rate, currency=currency)
+        else:
+            self.last_transaction = None
+
     def format_balance(self):
         return format_weis(self.raw_balance)
 
@@ -76,3 +84,30 @@ class Miner:
             attributes['balance_fiat'] = self.balance_fiat
         formatted_attributes = ' '.join([f'{k}="{v}"' for k, v in attributes.items()])
         return f'<Miner #{self.address} ({formatted_attributes})>'
+
+
+
+class Transaction:
+    def __init__(self, amount, time, duration, txid, exchange_rate=None, currency=None):
+        self._exchange_rate = exchange_rate
+        self._currency = currency
+        self.raw_amount = amount
+        self.amount = format_weis(amount)
+        self.amount_fiat = self.convert_amount()
+        self.duration = format_timespan(duration)
+        self.txid = txid
+        self.time = time
+
+    def convert_amount(self):
+        if self._exchange_rate and self._currency:
+            converted = round(convert_weis(self.raw_amount)*self._exchange_rate, 2)
+            converted = f'{converted} {self._currency}'
+            return converted
+
+    def __repr__(self):
+        attributes = {'time': self.time, 'amount': self.amount, 'raw_amount': self.raw_amount,
+                      'duration': self.duration}
+        if self.amount_fiat:
+            attributes['amount_fiat'] = self.amount_fiat
+        formatted_attributes = ' '.join([f'{k}="{v}"' for k, v in attributes.items()])
+        return f'<Transaction #{self.txid} ({formatted_attributes})>'
