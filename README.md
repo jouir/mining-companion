@@ -22,7 +22,7 @@ bot. You'll need the `chat_id` and `auth_key` for the next section.
 
 Configuration file use the JSON format with the following keys:
 * `miner`: wallet address of the miner
-* `currency`: symbol of the currency to convert (default: USD)
+* `currency`: symbol of the currency to convert (optional)
 * `telegram`: send notifications with Telegram (optional)
     * `auth_key`: Telegram authentication key for the bot API
     * `chat_id`: Telegram chat room id (where to send the message)

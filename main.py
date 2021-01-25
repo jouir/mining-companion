@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_STATE_FILE = 'state.json'
-DEFAULT_CURRENCY = 'USD'
 
 
 def parse_arguments():
@@ -104,14 +103,15 @@ def main():
     state = read_state(state_file)
 
     exchange_rate = None
-    currency = config.get('currency', DEFAULT_CURRENCY)
+    currency = config.get('currency')
 
-    logger.debug('fetching current rate')
-    try:
-        exchange_rate = get_rate(ids='ethereum', vs_currencies=currency)
-    except HTTPError as err:
-        logger.warning(f'failed to get ETH/{currency} rate')
-        logger.debug(str(err))
+    if currency:
+        logger.debug('fetching current rate')
+        try:
+            exchange_rate = get_rate(ids='ethereum', vs_currencies=currency)
+        except HTTPError as err:
+            logger.warning(f'failed to get ETH/{currency} rate')
+            logger.debug(str(err))
 
     block = watch_block(last_block=state.get('block'), config=config, disable_notifications=args.disable_notifications,
                         exchange_rate=exchange_rate, currency=currency)
