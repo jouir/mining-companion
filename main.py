@@ -118,11 +118,12 @@ def main():
     logger.debug('saving block number to state file')
     write_state(state_file, block_number=block.number)
 
-    miner = watch_miner(last_balance=state.get('balance'), address=config['miner'], config=config,
-                        disable_notifications=args.disable_notifications, exchange_rate=exchange_rate,
-                        currency=currency)
-    logger.debug('saving miner balance to state file')
-    write_state(state_file, miner_balance=miner.raw_balance)
+    if config.get('miner'):
+        miner = watch_miner(last_balance=state.get('balance'), address=config['miner'], config=config,
+                            disable_notifications=args.disable_notifications, exchange_rate=exchange_rate,
+                            currency=currency)
+        logger.debug('saving miner balance to state file')
+        write_state(state_file, miner_balance=miner.raw_balance)
 
 
 if __name__ == '__main__':

@@ -22,8 +22,5 @@
     "state_file": {
       "type": "string"
     }
-  },
-  "required": [
-    "miner"
-  ]
+  }
 }

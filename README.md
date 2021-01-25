@@ -2,7 +2,7 @@
 
 [Flexpool.io](https://flexpool.io) is a next-generation [Ethereum](https://ethereum.org/en/) mining pool known for their
 [#STOPEIP1559](https://stopeip1559.org/) move. `flexpool-activity` is able to listen and notify when a new **block** is
-mined by the pool and display the up-to-date **miner balance** and convert it to **fiat**.
+mined by the pool, display the up-to-date **miner balance** and convert it to **fiat**.
 
 ## Installation
 
@@ -21,7 +21,7 @@ bot. You'll need the `chat_id` and `auth_key` for the next section.
 ## Configuration
 
 Configuration file use the JSON format with the following keys:
-* `miner`: wallet address of the miner
+* `miner`: wallet address of the miner (optional)
 * `currency`: symbol of the currency to convert (optional)
 * `telegram`: send notifications with Telegram (optional)
     * `auth_key`: Telegram authentication key for the bot API
