@@ -16,6 +16,9 @@
         "auth_key"
       ]
     },
+    "currency": {
+      "type": "string"
+    },
     "miner": {
       "type": "string"
     },
