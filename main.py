@@ -68,7 +68,7 @@ def watch_miner(address, config, disable_notifications, last_balance=None, last_
         miner = Miner(address=address, exchange_rate=exchange_rate, currency=currency)
     except Exception as err:
         logger.error('failed to find miner')
-        logger.debug(err)
+        logger.exception(err)
         return
 
     logger.debug(miner)
