@@ -48,7 +48,7 @@ def watch_block(config, disable_notifications, last_block=None, exchange_rate=No
 
         if not disable_notifications and config.get('telegram'):
             logger.debug('sending block notification to telegram')
-            variables = {'number': block.number, 'time': block.time, 'reward': block.reward,
+            variables = {'hash': block.hash, 'number': block.number, 'time': block.time, 'reward': block.reward,
                          'reward_fiat': block.reward_fiat, 'round_time': block.round_time, 'luck': block.luck}
             payload = telegram.create_block_payload(chat_id=config['telegram']['chat_id'], message_variables=variables)
             try:
@@ -56,7 +56,7 @@ def watch_block(config, disable_notifications, last_block=None, exchange_rate=No
                 logger.info('block notification sent to telegram')
             except HTTPError as err:
                 logger.error('failed to send notification to telegram')
-                logger.debug(str(err))
+                logger.exception(err)
 
     return block
 

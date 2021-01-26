@@ -16,6 +16,7 @@ class LastBlock:
         self._exchange_rate = exchange_rate
         self._currency = currency
         block = self.get_last_block()
+        self.hash = block.hash
         self.number = block.number
         self.time = block.time
         self.raw_reward = block.total_rewards
