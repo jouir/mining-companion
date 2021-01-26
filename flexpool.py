@@ -86,7 +86,6 @@ class Miner:
         return f'<Miner #{self.address} ({formatted_attributes})>'
 
 
-
 class Transaction:
     def __init__(self, amount, time, duration, txid, exchange_rate=None, currency=None):
         self._exchange_rate = exchange_rate
