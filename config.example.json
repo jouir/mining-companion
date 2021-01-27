@@ -1,5 +1,9 @@
 {
-  "miner": "string",
+  "pools": [
+    "ethermine",
+    "flexpool"
+  ],
+  "miner": "your.eth.address",
   "currency": "USD",
   "telegram": {
     "chat_id": 123,

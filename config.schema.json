@@ -22,6 +22,17 @@
     "miner": {
       "type": "string"
     },
+    "pools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "flexpool",
+          "ethermine"
+        ]
+      },
+      "uniqueItems": true
+    },
     "state_file": {
       "type": "string"
     }

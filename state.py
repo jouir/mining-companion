@@ -2,29 +2,33 @@ import json
 import os
 
 
-def read_state(filename):
-    with open(filename, 'r') as fd:
-        return json.load(fd)
+class State:
+    def __init__(self, filename):
+        self.filename = filename
+        self.create()
 
+    def create(self):
+        if not os.path.isfile(self.filename):
+            with open(self.filename, 'w') as fd:
+                json.dump({}, fd)
 
-def write_state(filename, block_number=None, miner_balance=None, miner_payment=None):
-    data = {}
-    if os.path.isfile(filename):
-        data = read_state(filename)
+    def read(self):
+        with open(self.filename, 'r') as fd:
+            return json.load(fd)
 
-    if block_number:
-        data['block'] = block_number
+    def write(self, pool_name, block_number=None, miner_balance=None, miner_payment=None):
+        content = self.read()
+        if pool_name not in content:
+            content[pool_name] = {}
+        if block_number:
+            content[pool_name]['block'] = block_number
+        if miner_balance:
+            content[pool_name]['balance'] = miner_balance
+        if miner_payment:
+            content[pool_name]['payment'] = miner_payment
+        with open(self.filename, 'w') as fd:
+            json.dump(content, fd, indent=2, separators=(',', ': '))
 
-    if miner_balance:
-        data['balance'] = miner_balance
-
-    if miner_payment:
-        data['payment'] = miner_payment
-
-    with open(filename, 'w') as fd:
-        json.dump(data, fd)
-
-
-def create_state(filename):
-    if not os.path.isfile(filename):
-        write_state(filename)
+    def get(self, key):
+        content = self.read()
+        return content.get(key, {})

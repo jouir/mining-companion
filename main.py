@@ -2,12 +2,10 @@
 import argparse
 import logging
 
-import telegram
 from coingecko import get_rate
 from config import read_config, validate_config
-from flexpool import BlockNotFoundException, LastBlock, Miner
 from requests.exceptions import HTTPError
-from state import create_state, read_state, write_state
+from state import State
 
 logger = logging.getLogger(__name__)
 
@@ -34,81 +32,6 @@ def setup_logging(args):
     logging.basicConfig(format=log_format, level=args.loglevel, filename=args.logfile)
 
 
-def watch_block(config, disable_notifications, last_block=None, exchange_rate=None, currency=None):
-    logger.debug('fetching last mined block')
-    try:
-        block = LastBlock(exchange_rate=exchange_rate, currency=currency)
-    except BlockNotFoundException:
-        logger.warning('last block found')
-        return
-
-    if block.number != last_block:
-        logger.info(f'block {block.number} mined')
-        logger.debug(block)
-
-        if not disable_notifications and config.get('telegram'):
-            logger.debug('sending block notification to telegram')
-            variables = {'hash': block.hash, 'number': block.number, 'time': block.time, 'reward': block.reward,
-                         'reward_fiat': block.reward_fiat, 'round_time': block.round_time, 'luck': block.luck}
-            payload = telegram.create_block_payload(chat_id=config['telegram']['chat_id'], message_variables=variables)
-            try:
-                telegram.send_message(auth_key=config['telegram']['auth_key'], payload=payload)
-                logger.info('block notification sent to telegram')
-            except HTTPError as err:
-                logger.error('failed to send notification to telegram')
-                logger.exception(err)
-
-    return block
-
-
-def watch_miner(address, config, disable_notifications, last_balance=None, last_transaction=None, exchange_rate=None,
-                currency=None):
-    logger.debug(f'watching miner {address}')
-    try:
-        miner = Miner(address=address, exchange_rate=exchange_rate, currency=currency)
-    except Exception as err:
-        logger.error('failed to find miner')
-        logger.exception(err)
-        return
-
-    logger.debug(miner)
-
-    logger.debug('watching miner balance')
-    if miner.raw_balance != last_balance:
-        logger.info(f'miner {address} balance has changed')
-        if not disable_notifications and config.get('telegram'):
-            logger.debug('sending balance notification to telegram')
-            variables = {'address': address, 'balance': miner.balance, 'balance_fiat': miner.balance_fiat,
-                         'balance_percentage': miner.balance_percentage}
-            payload = telegram.create_balance_payload(chat_id=config['telegram']['chat_id'],
-                                                      message_variables=variables)
-            try:
-                telegram.send_message(auth_key=config['telegram']['auth_key'], payload=payload)
-                logger.info('balance notification sent to telegram')
-            except HTTPError as err:
-                logger.error('failed to send notification to telegram')
-                logger.debug(str(err))
-
-    logger.debug('watching miner payments')
-    if miner.last_transaction and miner.last_transaction.txid != last_transaction:
-        logger.info(f'new payment for miner {address}')
-        if not disable_notifications and config.get('telegram'):
-            logger.debug('sending payment notification to telegram')
-            variables = {'address': address, 'txid': miner.last_transaction.txid,
-                         'amount': miner.last_transaction.amount, 'amount_fiat': miner.last_transaction.amount_fiat,
-                         'time': miner.last_transaction.time, 'duration': miner.last_transaction.duration}
-            payload = telegram.create_payment_payload(chat_id=config['telegram']['chat_id'],
-                                                      message_variables=variables)
-            try:
-                telegram.send_message(auth_key=config['telegram']['auth_key'], payload=payload)
-                logger.info('payment notification sent to telegram')
-            except HTTPError as err:
-                logger.error('failed to send notification to telegram')
-                logger.debug(str(err))
-
-    return miner
-
-
 def main():
     args = parse_arguments()
     setup_logging(args)
@@ -116,12 +39,15 @@ def main():
     config = read_config(args.config)
     validate_config(config)
 
-    state_file = config.get('state_file', DEFAULT_STATE_FILE)
-    create_state(state_file)
-    state = read_state(state_file)
+    state = State(filename=config.get('state_file', DEFAULT_STATE_FILE))
 
     exchange_rate = None
     currency = config.get('currency')
+
+    notifier = None
+    if config.get('telegram') and not args.disable_notifications:
+        from telegram import TelegramNotifier
+        notifier = TelegramNotifier(**config['telegram'])
 
     if currency:
         logger.debug('fetching current rate')
@@ -131,22 +57,34 @@ def main():
             logger.warning(f'failed to get ETH/{currency} rate')
             logger.debug(str(err))
 
-    block = watch_block(last_block=state.get('block'), config=config, disable_notifications=args.disable_notifications,
-                        exchange_rate=exchange_rate, currency=currency)
-    if block:
-        logger.debug('saving block number to state file')
-        write_state(state_file, block_number=block.number)
+    for pool in config.get('pools', []):
+        pool_state = state.get(pool)
 
-    if config.get('miner'):
-        miner = watch_miner(last_balance=state.get('balance'), last_transaction=state.get('payment'),
-                            address=config['miner'], config=config, disable_notifications=args.disable_notifications,
-                            exchange_rate=exchange_rate, currency=currency)
-        if miner:
-            logger.debug('saving miner balance to state file')
-            write_state(state_file, miner_balance=miner.raw_balance)
-            if miner.last_transaction and miner.last_transaction.txid:
-                logger.debug('saving miner payment to state file')
-                write_state(state_file, miner_payment=miner.last_transaction.txid)
+        if pool == 'flexpool':
+            from pools.flexpool import FlexpoolHandler
+            handler = FlexpoolHandler(exchange_rate=exchange_rate, currency=currency, notifier=notifier)
+        elif pool == 'ethermine':
+            from pools.ethermine import EthermineHandler
+            handler = EthermineHandler(exchange_rate=exchange_rate, currency=currency, notifier=notifier)
+        else:
+            logger.warning(f'pool {pool} not supported')
+            continue
+
+        last_block = handler.watch_blocks(last_block=pool_state.get('block'))
+        if last_block:
+            logger.debug(f'saving {pool} block to state file')
+            state.write(pool_name=pool, block_number=last_block)
+
+        if config.get('miner'):
+            last_balance, last_transaction = handler.watch_miner(address=config['miner'],
+                                                                 last_balance=pool_state.get('balance'),
+                                                                 last_transaction=pool_state.get('payment'))
+            if last_balance:
+                logger.debug(f'saving {pool} miner balance to state file')
+                state.write(pool_name=pool, miner_balance=last_balance)
+            if last_transaction:
+                logger.debug(f'saving {pool} miner payment to state file')
+                state.write(pool_name=pool, miner_payment=last_transaction)
 
 
 if __name__ == '__main__':
