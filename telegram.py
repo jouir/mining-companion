@@ -36,8 +36,8 @@ class TelegramNotifier:
         return payload
 
     def notify_block(self, pool, number, hash, reward, time, round_time, luck, reward_fiat=None):
-        message_variables = {'pool': pool, 'number': number, 'reward': reward, 'time': time, 'round_time': round_time,
-                             'luck': luck, 'reward_fiat': reward_fiat}
+        message_variables = {'pool': pool, 'number': number, 'hash': hash, 'reward': reward, 'time': time,
+                             'round_time': round_time, 'luck': luck, 'reward_fiat': reward_fiat}
         payload = self._generate_payload(message_variables, 'block.md.j2')
         self._send_message(payload)
 
