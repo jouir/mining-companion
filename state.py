@@ -22,7 +22,7 @@ class State:
             content[pool_name] = {}
         if block_number:
             content[pool_name]['block'] = block_number
-        if miner_balance:
+        if miner_balance is not None:
             content[pool_name]['balance'] = miner_balance
         if miner_payment:
             content[pool_name]['payment'] = miner_payment

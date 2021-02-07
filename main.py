@@ -79,7 +79,7 @@ def main():
             last_balance, last_transaction = handler.watch_miner(address=config['miner'],
                                                                  last_balance=pool_state.get('balance'),
                                                                  last_transaction=pool_state.get('payment'))
-            if last_balance:
+            if last_balance is not None:
                 logger.debug(f'saving {pool} miner balance to state file')
                 state.write(pool_name=pool, miner_balance=last_balance)
             if last_transaction:
