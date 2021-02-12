@@ -1,3 +1,4 @@
 -r requirements/base.txt
 -r requirements/ethermine.txt
 -r requirements/flexpool.txt
+-r requirements/tests.txt

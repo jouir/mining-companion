@@ -61,7 +61,7 @@ All options are optional (but the companion would do nothing).
 ## Usage
 
 ```
-python3 main.py --help
+python3 companion/main.py --help
 ```
 
 
@@ -69,12 +69,14 @@ python3 main.py --help
 
 Contributions are welcomed! Feel free to update the code and create a pull-request.
 
-Be sure to lint the code before:
+Be sure to lint the code and run tests before:
 
 ```
 docker build -t pre-commit .
 docker run -it -v $(pwd):/mnt/ --rm pre-commit bash
 # cd /mnt/
+# pip install -r requirements.txt
 # pre-commit run --all-files
+# pytest
 # exit
 ```

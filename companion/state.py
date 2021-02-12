@@ -20,7 +20,7 @@ class State:
         content = self.read()
         if pool_name not in content:
             content[pool_name] = {}
-        if block_number:
+        if block_number is not None:
             content[pool_name]['block'] = block_number
         if miner_balance is not None:
             content[pool_name]['balance'] = miner_balance

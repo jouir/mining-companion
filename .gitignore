@@ -2,3 +2,5 @@ venv
 __pycache__
 config.json
 state.json
+.coverage
+test_state.json
