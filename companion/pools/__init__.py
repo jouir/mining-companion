@@ -30,22 +30,20 @@ class Handler:
         return miner.raw_balance
 
     def _watch_miner_payments(self, miner, last_transaction=None):
-        if miner.last_transaction and miner.last_transaction.txid != last_transaction:
-            logger.debug('watching miner payments')
-            # send notifications for recent payements only
-            for transaction in miner.transactions[MAX_NOTIFICATIONS_COUNT:]:
-                if not last_transaction or transaction.txid > last_transaction:
-                    logger.info(f'new payment {transaction.txid}')
-                    if self.notifier:
-                        logger.debug('sending payment notification')
-                        arguments = {'pool': self.pool_name, 'address': miner.address, 'txid': transaction.txid,
-                                     'amount': transaction.amount, 'amount_fiat': transaction.amount_fiat,
-                                     'time': transaction.time, 'duration': transaction.duration}
-                        try:
-                            self.notifier.notify_payment(**arguments)
-                            logger.info('payment notification sent')
-                        except Exception as err:
-                            logger.error('failed to send notification')
-                            logger.exception(err)
+        logger.debug('watching miner payments')
+        if miner.last_transaction and (not last_transaction or miner.last_transaction.txid != last_transaction):
+            # send notifications for last payment only
+            logger.info(f'new payment {miner.last_transaction.txid}')
+            if self.notifier:
+                logger.debug('sending payment notification')
+                arguments = {'pool': self.pool_name, 'address': miner.address, 'txid': miner.last_transaction.txid,
+                             'amount': miner.last_transaction.amount, 'amount_fiat': miner.last_transaction.amount_fiat,
+                             'time': miner.last_transaction.time, 'duration': miner.last_transaction.duration}
+                try:
+                    self.notifier.notify_payment(**arguments)
+                    logger.info('payment notification sent')
+                except Exception as err:
+                    logger.error('failed to send notification')
+                    logger.exception(err)
         if miner.last_transaction and miner.last_transaction.txid:
             return miner.last_transaction.txid

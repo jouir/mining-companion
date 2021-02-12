@@ -40,6 +40,7 @@ class Miner:
         miner = flexpoolapi.miner(address)
         self.raw_balance = miner.balance()
         self.balance = convert_weis(self.raw_balance)
+        self.balance_fiat = None
         if exchange_rate and currency:
             self.balance_fiat = convert_fiat(amount=self.raw_balance, exchange_rate=exchange_rate, currency=currency)
         payout_threshold = self.get_payout_threshold(miner)
