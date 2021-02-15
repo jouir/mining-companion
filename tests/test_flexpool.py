@@ -1,9 +1,9 @@
-from companion.pools.flexpool import FlexpoolHandler, Miner, Transaction
 from datetime import datetime, timedelta
-import pytest
+
+from companion.pools.flexpool import FlexpoolHandler, Transaction
+
 
 class TestFlexpoolHandler:
-    # def test_block(self, mocker):
     def test_init(self):
         handler = FlexpoolHandler()
         assert handler.pool_name == 'flexpool'
