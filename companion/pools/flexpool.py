@@ -46,7 +46,7 @@ class Miner:
         payout_threshold = self.get_payout_threshold(miner)
         self.balance_percentage = self.format_balance_percentage(payout_threshold=payout_threshold,
                                                                  balance=self.raw_balance)
-        self.transactions = self.get_payements(miner)
+        self.transactions = self.get_payements(miner, exchange_rate=exchange_rate, currency=currency)
 
     @property
     def url(self):
