@@ -131,7 +131,9 @@ class FlexpoolHandler(Handler):
         blocks = self.get_blocks(exchange_rate=self.exchange_rate, currency=self.currency)
         if blocks:
             # don't spam block notification at initialization
-            for block in blocks[MAX_NOTIFICATIONS_COUNT:]:
+            notification_slice = MAX_NOTIFICATIONS_COUNT if len(blocks) > MAX_NOTIFICATIONS_COUNT else 0
+            for block in blocks[notification_slice:]:
+                print(block)
                 if not last_block or last_block < block.number:
                     logger.info(f'new block {block.number}')
                     if self.notifier:
@@ -145,7 +147,7 @@ class FlexpoolHandler(Handler):
                         except Exception as err:
                             logger.error('failed to send notification')
                             logger.exception(err)
-            last_remote_block = block
+                last_remote_block = block
         if last_remote_block and last_remote_block.number:
             return last_remote_block.number
 
@@ -154,11 +156,12 @@ class FlexpoolHandler(Handler):
         remote_blocks = flexpoolapi.pool.last_blocks(count=MAX_BLOCKS_COUNT)
         # convert to blocks
         blocks = []
-        for remote_block in remote_blocks:
-            block = Block(number=remote_block.number, hash=remote_block.hash, time=remote_block.time,
-                          round_time=remote_block.round_time, reward=remote_block.total_rewards, luck=remote_block.luck,
-                          exchange_rate=exchange_rate, currency=currency)
-            blocks.append(block)
+        if remote_blocks:
+            for remote_block in remote_blocks:
+                block = Block(number=remote_block.number, hash=remote_block.hash, time=remote_block.time,
+                              round_time=remote_block.round_time, reward=remote_block.total_rewards,
+                              luck=remote_block.luck, exchange_rate=exchange_rate, currency=currency)
+                blocks.append(block)
         # sort by block number
         return sorted(blocks)
 

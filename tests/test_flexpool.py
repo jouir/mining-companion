@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 from companion.pools.flexpool import FlexpoolHandler, Transaction
+from flexpoolapi.shared import Block as BlockApi
 
 
 class TestFlexpoolHandler:
@@ -64,3 +65,40 @@ class TestFlexpoolHandler:
             notifier.notify_payment.assert_called_once()
         else:
             notifier.notify_payment.assert_not_called()
+
+    @staticmethod
+    def _create_blocks(numbers):
+        if numbers:
+            blocks = []
+            for number in numbers:
+                blocks.append(BlockApi(number=number, blockhash='h', block_type='bt', miner='m', difficulty=1,
+                                       timestamp=1, is_confirmed=True, round_time=1, luck=1.0, server_name='s',
+                                       block_reward=1, block_fees=1, uncle_inclusion_rewards=1, total_rewards=1))
+            return blocks
+
+    @pytest.mark.parametrize(
+        'last_block,remote_blocks,should_notify',
+        [
+            pytest.param(1, [1, 2], True, id='new_block_with_notification'),
+            pytest.param(None, [1], True, id='very_new_block_with_notification'),
+            pytest.param(1, [1], False, id='same_block_without_notification'),
+            pytest.param(9, range(1, 11), True, id='new_block_with_count_over_max_notification'),
+            pytest.param(10, range(1, 11), False, id='same_block_with_count_over_max_notification'),
+            pytest.param(None, None, False, id='zero_block_without_notification'),
+        ]
+    )
+    def test_block(self, mocker, last_block, remote_blocks, should_notify):
+        notifier = mocker.Mock()
+        notifier.notify_block = mocker.Mock()
+        handler = FlexpoolHandler(notifier=notifier)
+        last_blocks = mocker.patch('flexpoolapi.pool.last_blocks')
+        last_blocks.return_value = self._create_blocks(remote_blocks)
+        block = handler.watch_blocks(last_block=last_block)
+        if remote_blocks:
+            assert block == remote_blocks[-1]
+        else:
+            assert block is None
+        if should_notify:
+            notifier.notify_block.assert_called_once()
+        else:
+            notifier.notify_block.assert_not_called()
