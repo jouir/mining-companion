@@ -152,30 +152,39 @@ class FlexpoolHandler(Handler):
 
     @staticmethod
     def get_blocks(exchange_rate=None, currency=None):
-        remote_blocks = flexpoolapi.pool.last_blocks(count=MAX_BLOCKS_COUNT)
-        # convert to blocks
-        blocks = []
-        if remote_blocks:
-            for remote_block in remote_blocks:
-                block = Block(number=remote_block.number, hash=remote_block.hash, time=remote_block.time,
-                              round_time=remote_block.round_time, reward=remote_block.total_rewards,
-                              luck=remote_block.luck, exchange_rate=exchange_rate, currency=currency)
-                blocks.append(block)
-        # sort by block number
-        return sorted(blocks)
+        try:
+            remote_blocks = flexpoolapi.pool.last_blocks(count=MAX_BLOCKS_COUNT)
+            # convert to blocks
+            blocks = []
+            if remote_blocks:
+                for remote_block in remote_blocks:
+                    block = Block(number=remote_block.number, hash=remote_block.hash, time=remote_block.time,
+                                  round_time=remote_block.round_time, reward=remote_block.total_rewards,
+                                  luck=remote_block.luck, exchange_rate=exchange_rate, currency=currency)
+                    blocks.append(block)
+            # sort by block number
+            return sorted(blocks)
+        except flexpoolapi.exceptions.APIError as err:
+            logger.warning('failed to get blocks from Flexpool API')
+            logger.debug(err)
 
     def watch_miner(self, address, last_balance=None, last_transaction=None):
         logger.debug(f'watching miner {address}')
         try:
             miner = Miner(address=address, exchange_rate=self.exchange_rate, currency=self.currency)
-        except Exception as err:
+            logger.debug(miner)
+
+            last_balance = self._watch_miner_balance(miner=miner, last_balance=last_balance)
+            last_transaction = self._watch_miner_payments(miner=miner, last_transaction=last_transaction)
+
+            return last_balance, last_transaction
+        except flexpoolapi.exceptions.InvalidMinerAddress as err:
+            logger.error(f'miner address {address} is invalid')
+            logger.debug(err)
+        except flexpoolapi.exceptions.MinerDoesNotExist as err:
             logger.error(f'miner {address} not found')
-            logger.exception(err)
-            return
-
-        logger.debug(miner)
-
-        last_balance = self._watch_miner_balance(miner=miner, last_balance=last_balance)
-        last_transaction = self._watch_miner_payments(miner=miner, last_transaction=last_transaction)
-
-        return last_balance, last_transaction
+            logger.debug(err)
+        except flexpoolapi.exceptions.APIError as err:
+            logger.warning('failed to get miner from Flexpool API')
+            logger.debug(err)
+        return None, None

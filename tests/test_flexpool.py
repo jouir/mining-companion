@@ -34,6 +34,20 @@ class TestFlexpoolHandler:
         else:
             notifier.notify_balance.assert_not_called()
 
+    def test_balance_with_api_failure(self, mocker):
+        """An API failure should not send a balance notification"""
+        notifier = mocker.Mock()
+        notifier.notify_balance = mocker.Mock()
+        handler = FlexpoolHandler(notifier=notifier)
+        request_get = mocker.patch('requests.get')
+        request_get.return_value.status_code = 503
+        mocker.patch('companion.pools.flexpool.FlexpoolHandler._watch_miner_payments')
+        mocker.patch('companion.pools.flexpool.Miner.get_payements')
+        last_balance, last_transaction = handler.watch_miner(address='0000000000000000000000000000000000000001',
+                                                             last_balance=1)
+        assert last_balance is None
+        notifier.notify_balance.assert_not_called()
+
     @staticmethod
     def _create_transactions(names):
         if names:
@@ -65,6 +79,19 @@ class TestFlexpoolHandler:
             notifier.notify_payment.assert_called_once()
         else:
             notifier.notify_payment.assert_not_called()
+
+    def test_payment_with_api_failure(self, mocker):
+        """An API failure should not send a payment notification"""
+        notifier = mocker.Mock()
+        notifier.notify_payment = mocker.Mock()
+        handler = FlexpoolHandler(notifier=notifier)
+        request_get = mocker.patch('requests.get')
+        request_get.return_value.status_code = 503
+        mocker.patch('companion.pools.flexpool.FlexpoolHandler._watch_miner_balance')
+        last_balance, last_transaction = handler.watch_miner(address='0000000000000000000000000000000000000001',
+                                                             last_transaction=1)
+        assert last_transaction is None
+        notifier.notify_payment.assert_not_called()
 
     @staticmethod
     def _create_blocks(numbers):
@@ -102,3 +129,14 @@ class TestFlexpoolHandler:
             notifier.notify_block.assert_called_once()
         else:
             notifier.notify_block.assert_not_called()
+
+    def test_block_with_api_failure(self, mocker):
+        """An API failure should not send a block notification"""
+        notifier = mocker.Mock()
+        notifier.notify_block = mocker.Mock()
+        handler = FlexpoolHandler(notifier=notifier)
+        request_get = mocker.patch('requests.get')
+        request_get.return_value.status_code = 503
+        block = handler.watch_blocks(last_block=1)
+        assert block is None
+        notifier.notify_block.assert_not_called()
