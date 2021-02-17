@@ -133,7 +133,6 @@ class FlexpoolHandler(Handler):
             # don't spam block notification at initialization
             notification_slice = MAX_NOTIFICATIONS_COUNT if len(blocks) > MAX_NOTIFICATIONS_COUNT else 0
             for block in blocks[notification_slice:]:
-                print(block)
                 if not last_block or last_block < block.number:
                     logger.info(f'new block {block.number}')
                     if self.notifier:
